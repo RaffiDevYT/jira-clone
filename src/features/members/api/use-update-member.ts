@@ -16,7 +16,7 @@ export function useUpdateMember() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation<ResponseType, Error, RequestType>({
-    mutationFn: async ({ param, json }) => {
+    mutationFn: async ({ param,json }) => {
       const response = await client.api.members[":memberId"]["$patch"]({ param, json });
 
       if (!response.ok) {
