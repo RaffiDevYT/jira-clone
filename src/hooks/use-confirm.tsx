@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { ResponsiveModal } from "@/components/responsive-model";
 import {
@@ -10,15 +9,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-interface UserConfirmHookPorps {
+interface UserConfirmHookProps {
   title: string;
   message: string;
-  variant: ButtonProps["variant"];
+  variant?: ButtonProps["variant"]; // Made optional
 }
 
-export function useConfirm(p1: string, p2: string, p3: string, {
-    title, message, variant = "primary",
-}: UserConfirmHookPorps): [() => JSX.Element, () => Promise<unknown>] {
+export function useConfirm(p1: string, p2: string, options: UserConfirmHookProps): [() => JSX.Element, () => Promise<unknown>] {
+  const { title, message, variant = "primary" } = options || {}; // Safe destructuring with default object
+
   const [promise, setPromise] = useState<{
     resolve: (value: boolean) => void;
   } | null>(null);
