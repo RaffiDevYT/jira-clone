@@ -1,86 +1,83 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { DottedSeparator } from "@/components/dotted-separator";
 import { Button } from "@/components/ui/button";
+import { DottedSeparator } from "@/components/dotted-separator";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 
 import { useJoinWorkspace } from "../api/use-join-workspace";
-import { useWorkspaceId } from "../hooks/use-workspace-id";
-import { useInviteCode } from "../hooks/use-invite-code";
-import { useRouter } from "next/navigation";
 
 interface JoinWorkspaceFormProps {
-  initialValue: {
-    name: string;
-  };
+	initialValues: {
+		name: string;
+	};
+	code: string;
+	workspaceId: string;
 }
+export const JoinWorkspaceForm = ({
+	initialValues,
+	code: inviteCode,
+	workspaceId,
+}: JoinWorkspaceFormProps) => {
+	const router = useRouter();
+	const { mutate, isPending } = useJoinWorkspace();
 
-export function JoinWorkspaceForm({ initialValue }: JoinWorkspaceFormProps) {
-  const router = useRouter();
+	const onSubmit = () => {
+		mutate(
+			{
+				param: { workspaceId },
+				json: { code: inviteCode },
+			},
+			{
+				onSuccess: ({ data }) => {
+					router.push(`/workspaces/${data.$id}`);
+				},
+			}
+		);
+	};
 
-  const workspaceId = useWorkspaceId();
-  const inviteCode = useInviteCode();
-
-  const { mutate, isPending } = useJoinWorkspace();
-
-  function handleJoin() {
-    mutate(
-      {
-        param: {
-          workspaceId,
-          inviteCode,
-        },
-      },
-      {
-        onSuccess: () => {
-          router.push(`/workspaces/${workspaceId}`);
-        },
-      }
-    );
-  }
-
-  return (
-    <Card className="h-full w-full shadow-none border-none">
-      <CardHeader className="p-7">
-        <CardTitle className="text-xl font-bold">Join workspace</CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
-          You have been invited to join {initialValue.name} workspace
-        </CardDescription>
-      </CardHeader>
-      <div className="px-7">
-        <DottedSeparator />
-      </div>
-      <CardContent className="p-7">
-        <div className="flex flex-col lg:flex-row item-center justify-between gap-2">
-          <Button
-            size={"lg"}
-            variant={"secondary"}
-            type="button"
-            className="w-full lg:w-fit"
-            asChild
-            disabled={isPending}
-          >
-            <Link href={"/"}>Cancel</Link>
-          </Button>
-          <Button
-            size={"lg"}
-            type="button"
-            onClick={handleJoin}
-            className="w-full lg:w-fit"
-            disabled={isPending}
-          >
-            Join workspace
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+	return (
+		<Card className="size-full border-none shadow-none">
+			<CardHeader className="p-7">
+				<CardTitle className="text-xl font-bold">Join workspace</CardTitle>
+				<CardDescription>
+					You&apos;ve been invited to join <strong>{initialValues.name}</strong>{" "}
+					workspace
+				</CardDescription>
+			</CardHeader>
+			<div className="px-7">
+				<DottedSeparator />
+			</div>
+			<CardContent className="p-7">
+				<div className="flex flex-col gap-2 lg:flex-row items-center justify-between">
+					<Button
+						className="w-full lg:w-fit"
+						disabled={isPending}
+						variant="secondary"
+						type="button"
+						size="lg"
+						asChild
+					>
+						<Link href="/">Cancel</Link>
+					</Button>
+					<Button
+						className="w-full lg:w-fit"
+						disabled={isPending}
+						onClick={onSubmit}
+						type="button"
+						size="lg"
+					>
+						Join workspace
+					</Button>
+				</div>
+			</CardContent>
+		</Card>
+	);
+};

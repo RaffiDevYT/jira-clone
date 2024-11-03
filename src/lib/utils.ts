@@ -1,20 +1,29 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+	return twMerge(clsx(inputs));
 }
 
-export function generateInviteCode(length: number): string {
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
-  let result = "";
-  const charactersLength = characters.length;
+export const generateInviteCode = (length: number) => {
+	const charecters =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charactersLength);
-    result += characters.charAt(randomIndex);
-  }
+	let inviteCode = "";
 
-  return result;
-}
+	for (let i = 0; i < length; i++) {
+		inviteCode += charecters.charAt(
+			Math.floor(Math.random() * charecters.length)
+		);
+	}
+	return inviteCode;
+};
+
+export const INVITECODE_LENGTH = 6;
+
+export const snakeCaseToTitleCase = (str: string) => {
+	return str
+		.toLowerCase()
+		.replace(/_/g, " ")
+		.replace(/\b\w/g, (letter) => letter.toUpperCase());
+};

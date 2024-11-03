@@ -1,574 +1,414 @@
-// import { Hono } from "hono";
-// import { ID, Query } from "node-appwrite";
-// import { zValidator } from "@hono/zod-validator";
-
-// import { MemberRole } from "@/features/members/types";
-// import { getMember } from "@/features/members/utils";
-
-// import { sessionMiddleware } from "@/lib/session-middleware";
-// import {
-//   DATABASE_ID,
-//   IMAGES_BUCKET_ID,
-//   MEMBERS_ID,
-//   WORKSPACES_ID,
-// } from "@/config";
-// import { generateInviteCode } from "@/lib/utils";
-
-// import { createWorkspaceSchema, updateWorkspaceSchema } from "../schema";
-// import { Workspace } from "../types";
-
-// const workspaces = new Hono()
-//   .get("/", sessionMiddleware, async (c) => {
-//     const user = c.get("user");
-//     const databases = c.get("databases");
-
-//     const members = await databases.listDocuments(DATABASE_ID, MEMBERS_ID, [
-//       Query.equal("userId", user.$id),
-//     ]);
-
-//     if (members.total === 0) {
-//       return c.json({ data: { documents: [] }, total: 0 });
-//     }
-
-//     const workspaceIds = members.documents.map((member) => member.workspaceId);
-
-//     const workspaces = await databases.listDocuments(
-//       DATABASE_ID,
-//       WORKSPACES_ID,
-//       [Query.orderDesc("$createdAt"), Query.contains("$id", workspaceIds)]
-//     );
-
-//     return c.json({
-//       data: workspaces,
-//       success: true,
-//       message: "fetched workspace successfully",
-//     });
-//   })
-//   .post(
-//     "/",
-//     sessionMiddleware,
-//     zValidator("form", createWorkspaceSchema),
-//     async (c) => {
-//       const user = c.get("user");
-//       const databases = c.get("databases");
-//       const storage = c.get("storage");
-
-//       const { name, image } = c.req.valid("form");
-
-//       let uploadedImageUrl: string | undefined;
-
-//       if (image instanceof File) {
-//         const file = await storage.createFile(
-//           IMAGES_BUCKET_ID,
-//           ID.unique(),
-//           image
-//         );
-
-//         /*
-//         ArrayBuffer: Raw binary data.
-//         Base64: Textual encoding of binary data.      
-//         (ArrayBuffer to Base64) when you need to send the binary data as text (e.g., in JSON, HTML, etc.).
-//       */
-
-//         const arrayBuffer = await storage.getFilePreview(
-//           IMAGES_BUCKET_ID,
-//           file.$id
-//         );
-
-//         uploadedImageUrl = `data:image/png;base64,${Buffer.from(
-//           arrayBuffer
-//         ).toString("base64")}`;
-//       }
-
-//       const workspace = await databases.createDocument(
-//         DATABASE_ID,
-//         WORKSPACES_ID,
-//         ID.unique(),
-//         {
-//           name,
-//           userId: user.$id,
-//           imageUrl: uploadedImageUrl,
-//           inviteCode: generateInviteCode(6),
-//         }
-//       );
-
-//       await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
-//         userId: user.$id,
-//         workspaceId: workspace.$id,
-//         role: MemberRole.ADMIN,
-//       });
-
-//       return c.json({
-//         data: workspace,
-//         success: true,
-//         message: "created workspace successfully",
-//       });
-//     }
-//   )
-//   .patch(
-//     "/:workspaceId",
-//     sessionMiddleware,
-//     zValidator("form", updateWorkspaceSchema),
-//     async (c) => {
-//       const user = c.get("user");
-//       const databases = c.get("databases");
-//       const storage = c.get("storage");
-
-//       const { name, image } = c.req.valid("form");
-
-//       const workspaceId = c.req.param("workspaceId");
-
-//       const member = await getMember({
-//         databases,
-//         workspaceId,
-//         userId: user.$id,
-//       });
-
-//       if (!member || member.role !== MemberRole.ADMIN) {
-//         return c.json(
-//           {
-//             success: false,
-//             message: "unauthorized",
-//           },
-//           401
-//         );
-//       }
-
-//       let uploadedImageUrl: string | undefined;
-
-//       if (image instanceof File) {
-//         const file = await storage.createFile(
-//           IMAGES_BUCKET_ID,
-//           ID.unique(),
-//           image
-//         );
-
-//         /*
-//         ArrayBuffer: Raw binary data.
-//         Base64: Textual encoding of binary data.      
-//         (ArrayBuffer to Base64) when you need to send the binary data as text (e.g., in JSON, HTML, etc.).
-//       */
-
-//         const arrayBuffer = await storage.getFilePreview(
-//           IMAGES_BUCKET_ID,
-//           file.$id
-//         );
-
-//         uploadedImageUrl = `data:image/png;base64,${Buffer.from(
-//           arrayBuffer
-//         ).toString("base64")}`;
-//       } else {
-//         uploadedImageUrl = image;
-//       }
-
-//       const workspace = await databases.updateDocument(
-//         DATABASE_ID,
-//         WORKSPACES_ID,
-//         workspaceId,
-//         {
-//           name,
-//           imageUrl: uploadedImageUrl,
-//         }
-//       );
-
-//       return c.json({
-//         data: workspace,
-//         success: true,
-//         message: "updated workspace successfully",
-//       });
-//     }
-//   )
-//   .delete(":workspaceId", sessionMiddleware, async (c) => {
-//     //get the param
-//     const { workspaceId } = c.req.param();
-//     const databases = c.get("databases");
-//     const user = c.get("user");
-
-//     //utilize the session to fetch the userID and check wheather he is part of this workspace with admin access or not
-//     const member = await getMember({
-//       databases,
-//       workspaceId,
-//       userId: user.$id,
-//     });
-
-//     //if not then return unauthorized
-//     if (!member || member.role !== MemberRole.ADMIN) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "unauthorized",
-//         },
-//         401
-//       );
-//     }
-
-//     //otherwise just run query on the workspaces and implement the delete functionality
-//     //one more catch: need to delete members , projects and tasks that are linked to this workspace
-//     //in postgres i would have just simply added cascade property
-//     // TODO: delete members, projects and tasks
-//     const workspace = await databases.deleteDocument(
-//       DATABASE_ID,
-//       WORKSPACES_ID,
-//       workspaceId
-//     );
-
-//     console.log("deleted workspace data: ", workspace);
-
-//     return c.json({
-//       data: workspace,
-//       success: true,
-//       message: "deleted workspace successfully",
-//     });
-//   })
-//   .post(":workspaceId/reset-invite-code", sessionMiddleware, async (c) => {
-//     //get the param
-//     const { workspaceId } = c.req.param();
-//     const databases = c.get("databases");
-//     const user = c.get("user");
-
-//     //utilize the session to fetch the userID and check wheather he is part of this workspace with admin access or not
-//     const member = await getMember({
-//       databases,
-//       workspaceId,
-//       userId: user.$id,
-//     });
-
-//     //if not then return unauthorized
-//     if (!member || member.role !== MemberRole.ADMIN) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "unauthorized",
-//         },
-//         401
-//       );
-//     }
-
-//     const workspace = await databases.updateDocument(
-//       DATABASE_ID,
-//       WORKSPACES_ID,
-//       workspaceId,
-//       { inviteCode: generateInviteCode(6) }
-//     );
-
-//     return c.json({
-//       data: workspace,
-//       success: true,
-//       message: "invite code reset successfully",
-//     });
-//   })
-//   .post(":workspaceId/join/:inviteCode", sessionMiddleware, async (c) => {
-//     //fetch id and code
-//     const { workspaceId, inviteCode } = c.req.param();
-
-//     const user = c.get("user");
-//     const databases = c.get("databases");
-
-//     //check: already member of this workspace
-//     const member = await getMember({
-//       databases,
-//       workspaceId,
-//       userId: user.$id,
-//     });
-
-//     if (member) {
-//       return c.json(
-//         {
-//           success: false,
-//           message: "already a member",
-//         },
-//         400
-//       );
-//     }
-
-//     //check: workspace exist
-//     const workspace = await databases.getDocument<Workspace>(
-//       DATABASE_ID,
-//       WORKSPACES_ID,
-//       workspaceId
-//     );
-
-//     //verify inivite code
-//     if (workspace.inviteCode !== inviteCode)
-//       return c.json(
-//         {
-//           success: false,
-//           message: "invalid invite link",
-//         },
-//         400
-//       );
-
-//     //create a member with the user id and workspace id with member access
-//     await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
-//       workspaceId,
-//       userId: user.$id,
-//       role: MemberRole.ADMIN,
-//     });
-
-//     return c.json({
-//       data: workspace,
-//       success: true,
-//       message: "joined workspace successfully",
-//     });
-//   });
-
-// export default workspaces;
-
-import { Hono } from "hono";
 import { ID, Query } from "node-appwrite";
+import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
-
-import { MemberRole } from "@/features/members/types";
-import { getMember } from "@/features/members/utils";
 
 import { sessionMiddleware } from "@/lib/session-middleware";
 import {
-  DATABASE_ID,
-  IMAGES_BUCKET_ID,
-  MEMBERS_ID,
-  WORKSPACES_ID,
+	DATABASE_ID,
+	IMAGES_BUCKET_ID,
+	MEMBERS_ID,
+	TASKS_ID,
+	WORKSPACE_ID,
 } from "@/config";
-import { generateInviteCode } from "@/lib/utils";
 
-import { createWorkspaceSchema, updateWorkspaceSchema } from "../schema";
+import {
+	createWorkspaceSchema,
+	inviteCodeSchema,
+	updateWorkspaceSchema,
+} from "../schemas";
+import { MemberRole } from "@/features/members/types";
+import { generateInviteCode, INVITECODE_LENGTH } from "@/lib/utils";
+import { getMember } from "@/features/members/utilts";
 import { Workspace } from "../types";
+import { endOfMonth, startOfMonth, subMonths } from "date-fns";
+import { TaskStatus } from "@/features/tasks/types";
 
-const workspaces = new Hono()
-  .get("/", sessionMiddleware, async (c) => {
-    const user = c.get("user");
-    const databases = c.get("databases");
+const app = new Hono()
+	.get("/", sessionMiddleware, async (c) => {
+		const user = c.get("user");
+		const databases = c.get("databases");
+		const members = await databases.listDocuments(DATABASE_ID, MEMBERS_ID, [
+			Query.equal("userId", user.$id),
+		]);
 
-    const members = await databases.listDocuments(DATABASE_ID, MEMBERS_ID, [
-      Query.equal("userId", user.$id),
-    ]);
+		if (members.total == 0) {
+			return c.json({ data: { documents: [] }, total: 0 });
+		}
+		const workspaceIds = members.documents.map((member) => member.workspaceId);
+		const workspaces = await databases.listDocuments(
+			DATABASE_ID,
+			WORKSPACE_ID,
+			[Query.orderDesc("$createdAt"), Query.contains("$id", workspaceIds)]
+		);
+		return c.json({ data: workspaces });
+	})
+	.get("/:workspaceId", sessionMiddleware, async (c) => {
+		const user = c.get("user");
+		const databases = c.get("databases");
+		const { workspaceId } = c.req.param();
 
-    if (members.total === 0) {
-      return c.json({ data: { documents: [] }, total: 0 });
-    }
+		const member = await getMember({
+			databases,
+			workspaceId,
+			userId: user.$id,
+		});
 
-    const workspaceIds = members.documents.map((member) => member.workspaceId);
+		if (!member) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
 
-    const workspaces = await databases.listDocuments(
-      DATABASE_ID,
-      WORKSPACES_ID,
-      [Query.orderDesc("$createdAt"), Query.contains("$id", workspaceIds)]
-    );
+		const workspace = await databases.getDocument<Workspace>(
+			DATABASE_ID,
+			WORKSPACE_ID,
+			workspaceId
+		);
 
-    return c.json({
-      data: workspaces,
-      success: true,
-      message: "Fetched workspace successfully",
-    });
-  })
-  .post(
-    "/",
-    sessionMiddleware,
-    zValidator("form", createWorkspaceSchema),
-    async (c) => {
-      const user = c.get("user");
-      const databases = c.get("databases");
-      const storage = c.get("storage");
+		return c.json({ data: workspace });
+	})
+	.get("/:workspaceId/info", sessionMiddleware, async (c) => {
+		const databases = c.get("databases");
+		const { workspaceId } = c.req.param();
 
-      const { name, image } = c.req.valid("form");
+		const workspace = await databases.getDocument<Workspace>(
+			DATABASE_ID,
+			WORKSPACE_ID,
+			workspaceId
+		);
 
-      let uploadedImageUrl = null;
+		return c.json({
+			data: {
+				$id: workspace.$id,
+				name: workspace.name,
+				imageUrl: workspace.imageUrl,
+			},
+		});
+	})
+	.post(
+		"/",
+		zValidator("form", createWorkspaceSchema),
+		sessionMiddleware,
+		async (c) => {
+			const databases = c.get("databases");
+			const storage = c.get("storage");
+			const user = c.get("user");
 
-      if (image && Buffer.isBuffer(image)) {
-        try {
-          const fileId = ID.unique();
+			const { name, image } = c.req.valid("form");
+			let uploadedImage: string | undefined;
+			if (image instanceof File) {
+				const file = await storage.createFile(
+					IMAGES_BUCKET_ID,
+					ID.unique(),
+					image
+				);
+				const buffer: ArrayBuffer = await storage.getFilePreview(
+					IMAGES_BUCKET_ID,
+					file.$id
+				);
+				uploadedImage = `data:image/png;base64,${Buffer.from(buffer).toString(
+					"base64"
+				)}`;
+			}
+			const workspace = await databases.createDocument(
+				DATABASE_ID,
+				WORKSPACE_ID,
+				ID.unique(),
+				{
+					name,
+					userId: user.$id,
+					imageUrl: uploadedImage,
+					inviteCode: generateInviteCode(INVITECODE_LENGTH),
+				}
+			);
 
-          // Create a Blob from the Buffer
-          const blob = new Blob([image], { type: 'image/png' });
-          // Create a File object from the Blob
-          const file = new File([blob], `${fileId}.png`, { type: 'image/png' });
+			await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
+				userId: user.$id,
+				workspaceId: workspace.$id,
+				role: MemberRole.ADMIN,
+			});
+			return c.json({ data: workspace });
+		}
+	)
+	.patch(
+		"/:workspaceId",
+		sessionMiddleware,
+		zValidator("form", updateWorkspaceSchema),
+		async (c) => {
+			const databases = c.get("databases");
+			const storage = c.get("storage");
+			const user = c.get("user");
 
-          const uploadedFile = await storage.createFile(IMAGES_BUCKET_ID, fileId, file);
-          const arrayBuffer = await storage.getFilePreview(IMAGES_BUCKET_ID, uploadedFile.$id);
-          uploadedImageUrl = `data:image/png;base64,${Buffer.from(arrayBuffer).toString("base64")}`;
-        } catch (error) {
-          return c.json({ success: false, message: "Error uploading image" }, 500);
-        }
-      }
+			const { workspaceId } = c.req.param();
+			const { name, image } = c.req.valid("form");
+			const member = await getMember({
+				databases,
+				workspaceId,
+				userId: user.$id,
+			});
 
-      try {
-        const workspace = await databases.createDocument(DATABASE_ID, WORKSPACES_ID, ID.unique(), {
-          name,
-          userId: user.$id,
-          imageUrl: uploadedImageUrl,
-          inviteCode: generateInviteCode(6),
-        });
+			if (!member || member.role !== MemberRole.ADMIN) {
+				return c.json({ error: "Unauthorized" }, 401);
+			}
 
-        await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
-          userId: user.$id,
-          workspaceId: workspace.$id,
-          role: MemberRole.ADMIN,
-        });
+			let uploadedImage: string | undefined;
+			if (image instanceof File) {
+				const file = await storage.createFile(
+					IMAGES_BUCKET_ID,
+					ID.unique(),
+					image
+				);
+				const buffer: ArrayBuffer = await storage.getFilePreview(
+					IMAGES_BUCKET_ID,
+					file.$id
+				);
+				uploadedImage = `data:image/png;base64,${Buffer.from(buffer).toString(
+					"base64"
+				)}`;
+			} else {
+				uploadedImage = image;
+			}
+			const updatedWorkspace = await databases.updateDocument(
+				DATABASE_ID,
+				WORKSPACE_ID,
+				workspaceId,
+				{
+					name,
+					imageUrl: uploadedImage,
+				}
+			);
 
-        return c.json({
-          data: workspace,
-          success: true,
-          message: "Created workspace successfully",
-        });
-      } catch (error) {
-        return c.json({ success: false, message: "Error creating workspace" }, 500);
-      }
-    }
-  )
-  .patch(
-    "/:workspaceId",
-    sessionMiddleware,
-    zValidator("form", updateWorkspaceSchema),
-    async (c) => {
-      const user = c.get("user");
-      const databases = c.get("databases");
-      const storage = c.get("storage");
+			return c.json({ data: updatedWorkspace });
+		}
+	)
+	.delete("/:workspaceId", sessionMiddleware, async (c) => {
+		const databases = c.get("databases");
+		const user = c.get("user");
+		const { workspaceId } = c.req.param();
+		const member = await getMember({
+			databases,
+			workspaceId,
+			userId: user.$id,
+		});
+		if (!member || member.role !== MemberRole.ADMIN) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
+		// TODO: delete members, projects, tasks
+		await databases.deleteDocument(DATABASE_ID, WORKSPACE_ID, workspaceId);
+		return c.json({ data: { $id: workspaceId } });
+	})
+	.post("/:workspaceId/reset-invite-code", sessionMiddleware, async (c) => {
+		const databases = c.get("databases");
+		const user = c.get("user");
+		const { workspaceId } = c.req.param();
+		const member = await getMember({
+			databases,
+			workspaceId,
+			userId: user.$id,
+		});
+		if (!member || member.role !== MemberRole.ADMIN) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
+		const workspace = await databases.updateDocument(
+			DATABASE_ID,
+			WORKSPACE_ID,
+			workspaceId,
+			{
+				inviteCode: generateInviteCode(INVITECODE_LENGTH),
+			}
+		);
+		return c.json({ data: workspace });
+	})
+	.post(
+		"/:workspaceId/join",
+		sessionMiddleware,
+		zValidator("json", inviteCodeSchema),
+		async (c) => {
+			const { workspaceId } = c.req.param();
+			const { code } = c.req.valid("json");
 
-      const { name, image } = c.req.valid("form");
-      const workspaceId = c.req.param("workspaceId");
+			const databases = c.get("databases");
+			const user = c.get("user");
 
-      const member = await getMember({
-        databases,
-        workspaceId,
-        userId: user.$id,
-      });
+			const member = await getMember({
+				databases,
+				workspaceId,
+				userId: user.$id,
+			});
+			if (member) {
+				return c.json({ error: "Already a membber" }, 400);
+			}
 
-      if (!member || member.role !== MemberRole.ADMIN) {
-        return c.json({ success: false, message: "Unauthorized" }, 401);
-      }
+			const workspace = await databases.getDocument<Workspace>(
+				DATABASE_ID,
+				WORKSPACE_ID,
+				workspaceId
+			);
 
-      let uploadedImageUrl = null;
+			if (workspace.inviteCode !== code) {
+				return c.json({ error: "Invalid invite code" }, 400);
+			}
 
-      if (image && Buffer.isBuffer(image)) {
-        try {
-          const fileId = ID.unique();
+			await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
+				workspaceId,
+				userId: user.$id,
+				role: MemberRole.MEMBER,
+			});
+			return c.json({ data: workspace });
+		}
+	)
+	.get("/:workspaceId/analytics", sessionMiddleware, async (c) => {
+		const databases = c.get("databases");
+		const user = c.get("user");
+		const { workspaceId } = c.req.param();
 
-          // Create a Blob from the Buffer
-          const blob = new Blob([image], { type: 'image/png' });
-          // Create a File object from the Blob
-          const file = new File([blob], `${fileId}.png`, { type: 'image/png' });
+		const member = await getMember({
+			databases,
+			workspaceId: workspaceId,
+			userId: user.$id,
+		});
+		if (!member) {
+			return c.json({ error: "Unauthorized" }, 401);
+		}
 
-          const uploadedFile = await storage.createFile(IMAGES_BUCKET_ID, fileId, file);
-          const arrayBuffer = await storage.getFilePreview(IMAGES_BUCKET_ID, uploadedFile.$id);
-          uploadedImageUrl = `data:image/png;base64,${Buffer.from(arrayBuffer).toString("base64")}`;
-        } catch (error) {
-          return c.json({ success: false, message: "Error uploading image" }, 500);
-        }
-      } else {
-        uploadedImageUrl = image; // Use existing image URL if not a new upload
-      }
+		const now = new Date();
+		const thisMonthStart = startOfMonth(now);
+		const thisMonthEnd = endOfMonth(now);
+		const lastMonthStart = startOfMonth(subMonths(now, 1));
+		const lastMonthEnd = endOfMonth(subMonths(now, 1));
 
-      try {
-        const workspace = await databases.updateDocument(DATABASE_ID, WORKSPACES_ID, workspaceId, {
-          name,
-          imageUrl: uploadedImageUrl,
-        });
+		const thisMonthTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.greaterThanEqual("$createdAt", thisMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", thisMonthEnd.toISOString()),
+			]
+		);
+		const lastMonthTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.greaterThanEqual("$createdAt", lastMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", lastMonthEnd.toISOString()),
+			]
+		);
 
-        return c.json({
-          data: workspace,
-          success: true,
-          message: "Updated workspace successfully",
-        });
-      } catch (error) {
-        return c.json({ success: false, message: "Error updating workspace" }, 500);
-      }
-    }
-  )
-  .delete(":workspaceId", sessionMiddleware, async (c) => {
-    const { workspaceId } = c.req.param();
-    const databases = c.get("databases");
-    const user = c.get("user");
+		const taskCount = thisMonthTasks.total;
+		const taskDiff = taskCount - lastMonthTasks.total;
 
-    const member = await getMember({
-      databases,
-      workspaceId,
-      userId: user.$id,
-    });
+		const thisMonthAssignedTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.equal("assigneeId", member.$id),
+				Query.greaterThanEqual("$createdAt", thisMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", thisMonthEnd.toISOString()),
+			]
+		);
+		const lastMonthAssignedTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.equal("assigneeId", member.$id),
+				Query.greaterThanEqual("$createdAt", lastMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", lastMonthEnd.toISOString()),
+			]
+		);
 
-    if (!member || member.role !== MemberRole.ADMIN) {
-      return c.json({ success: false, message: "Unauthorized" }, 401);
-    }
+		const assignedTaskCount = thisMonthAssignedTasks.total;
+		const assignedTaskDiff = assignedTaskCount - lastMonthAssignedTasks.total;
 
-    try {
-      const workspace = await databases.deleteDocument(DATABASE_ID, WORKSPACES_ID, workspaceId);
+		const thisMonthIncompleteTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.notEqual("status", TaskStatus.DONE),
+				Query.greaterThanEqual("$createdAt", thisMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", thisMonthEnd.toISOString()),
+			]
+		);
+		const lastMonthIncompleteTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.notEqual("status", TaskStatus.DONE),
+				Query.greaterThanEqual("$createdAt", lastMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", lastMonthEnd.toISOString()),
+			]
+		);
 
-      return c.json({
-        data: workspace,
-        success: true,
-        message: "Deleted workspace successfully",
-      });
-    } catch (error) {
-      return c.json({ success: false, message: "Error deleting workspace" }, 500);
-    }
-  })
-  .post(":workspaceId/reset-invite-code", sessionMiddleware, async (c) => {
-    const { workspaceId } = c.req.param();
-    const databases = c.get("databases");
-    const user = c.get("user");
+		const incompleteTaskCount = thisMonthIncompleteTasks.total;
+		const incompleteTaskDiff =
+			incompleteTaskCount - lastMonthIncompleteTasks.total;
 
-    const member = await getMember({
-      databases,
-      workspaceId,
-      userId: user.$id,
-    });
+		const thisMonthCompletedTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.equal("status", TaskStatus.DONE),
+				Query.greaterThanEqual("$createdAt", thisMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", thisMonthEnd.toISOString()),
+			]
+		);
+		const lastMonthCompletedTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.equal("status", TaskStatus.DONE),
+				Query.greaterThanEqual("$createdAt", lastMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", lastMonthEnd.toISOString()),
+			]
+		);
 
-    if (!member || member.role !== MemberRole.ADMIN) {
-      return c.json({ success: false, message: "Unauthorized" }, 401);
-    }
+		const completedTaskCount = thisMonthCompletedTasks.total;
+		const completeTaskDiff = completedTaskCount - lastMonthCompletedTasks.total;
 
-    try {
-      const workspace = await databases.updateDocument(DATABASE_ID, WORKSPACES_ID, workspaceId, {
-        inviteCode: generateInviteCode(6),
-      });
+		const thisMonthOverDueTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.notEqual("status", TaskStatus.DONE),
+				Query.lessThan("dueDate", now.toISOString()),
+				Query.greaterThanEqual("$createdAt", thisMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", thisMonthEnd.toISOString()),
+			]
+		);
+		const lastMonthOverDueTasks = await databases.listDocuments(
+			DATABASE_ID,
+			TASKS_ID,
+			[
+				Query.equal("workspaceId", workspaceId),
+				Query.notEqual("status", TaskStatus.DONE),
+				Query.lessThan("dueDate", now.toISOString()),
+				Query.greaterThanEqual("$createdAt", lastMonthStart.toISOString()),
+				Query.lessThanEqual("$createdAt", lastMonthEnd.toISOString()),
+			]
+		);
 
-      return c.json({
-        data: workspace,
-        success: true,
-        message: "Invite code reset successfully",
-      });
-    } catch (error) {
-      return c.json({ success: false, message: "Error resetting invite code" }, 500);
-    }
-  })
-  .post(":workspaceId/join/:inviteCode", sessionMiddleware, async (c) => {
-    const { workspaceId, inviteCode } = c.req.param();
-    const user = c.get("user");
-    const databases = c.get("databases");
+		const overdueTaskCount = thisMonthOverDueTasks.total;
+		const overdueTaskDiff = overdueTaskCount - lastMonthOverDueTasks.total;
 
-    const member = await getMember({
-      databases,
-      workspaceId,
-      userId: user.$id,
-    });
-
-    if (member) {
-      return c.json({ success: false, message: "Already a member" }, 400);
-    }
-
-    try {
-      const workspace = await databases.getDocument<Workspace>(
-        DATABASE_ID,
-        WORKSPACES_ID,
-        workspaceId
-      );
-
-      if (workspace.inviteCode !== inviteCode) {
-        return c.json({ success: false, message: "Invalid invite link" }, 400);
-      }
-
-      await databases.createDocument(DATABASE_ID, MEMBERS_ID, ID.unique(), {
-        workspaceId,
-        userId: user.$id,
-        role: MemberRole.MEMBER,
-      });
-
-      return c.json({
-        data: workspace,
-        success: true,
-        message: "Joined workspace successfully",
-      });
-    } catch (error) {
-      return c.json({ success: false, message: "Error joining workspace" }, 500);
-    }
-  });
-
-export default workspaces;
+		return c.json({
+			data: {
+				taskCount,
+				taskDiff,
+				assignedTaskCount,
+				assignedTaskDiff,
+				incompleteTaskCount,
+				incompleteTaskDiff,
+				completedTaskCount,
+				completeTaskDiff,
+				overdueTaskCount,
+				overdueTaskDiff,
+			},
+		});
+	});
+export default app;
