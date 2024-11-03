@@ -1,42 +1,34 @@
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import type { InferRequestType, InferResponseType } from "hono/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { InferRequestType, InferResponseType } from "hono";
 
 import { client } from "@/lib/rpc";
-import { toast } from "sonner";
 
-type ResquestType = InferRequestType<
-  (typeof client.api.auth.register)["$post"]
->;
 type ResponseType = InferResponseType<
-  (typeof client.api.auth.register)["$post"],
-  200
+	(typeof client.api.auth.register)["$post"]
 >;
+type RequestType = InferRequestType<(typeof client.api.auth.register)["$post"]>;
 
-export function useRegister() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
+export const useRegister = () => {
+	const router = useRouter();
+	const queryClient = useQueryClient();
+	const mutation = useMutation<ResponseType, Error, RequestType>({
+		mutationFn: async ({ json }) => {
+			const response = await client.api.auth.register.$post({ json });
+			if (!response.ok) throw new Error("Failed to register");
 
-  const mutation = useMutation<ResponseType, Error, ResquestType>({
-    mutationFn: async ({ json }) => {
-      const response = await client.api.auth.register.$post({ json }); //current.$get() or ["$get"]() but while infering the request/response type ie.InferRequestType use [] syntax only
+			return await response.json();
+		},
+		onSuccess: () => {
+			router.refresh();
+			toast.success("Registered successfully!");
+			queryClient.invalidateQueries({ queryKey: ["current"] });
+		},
+		onError: () => {
+			toast.error("Failed to register");
+		},
+	});
 
-      if (!response.ok) {
-        toast.error("Failed to register");
-        throw new Error("Failed to register");
-      }
-
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast.success("Registered successfully");
-
-      router.refresh();
-      queryClient.invalidateQueries({ queryKey: ["current"] });
-    },
-    onError: () => {
-      toast.error("Failed to register");
-    },
-  });
-  return mutation;
-}
+	return mutation;
+};
