@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 
@@ -8,24 +6,19 @@ import { Navigation } from "./navigation";
 import { DottedSeparator } from "./dotted-separator";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
-export function Sidebar() {
-  return (
-    <aside className="w-full h-full bg-neutral-100 p-4">
-      <Link href="/">
-        <Image
-          src="/task-tracker-01.svg"
-          width={164}
-          height={48}
-          className="rounded-md border"
-          alt="logo"
-        />
-      </Link>
-      <DottedSeparator className="my-4" />
-      <WorkspaceSwitcher />
-      <DottedSeparator className="my-4" />
-      <Navigation />
-      <DottedSeparator className="my-4" />
-      <Projects />
-    </aside>
-  );
-}
+export const Sidebar = () => {
+	return (
+		<aside className="h-full bg-neutral-100 p-4 w-full">
+			<Link href="/">
+				{/* <Image src="/logo.png" alt="Logo" width={164} height={50} /> */}
+				<h1 className="text-2xl font-semibold text-center">JIRA APPS</h1>
+			</Link>
+			<DottedSeparator className="my-4" />
+			<WorkspaceSwitcher />
+			<DottedSeparator className="my-4" />
+			<Navigation />
+			<DottedSeparator className="my-4" />
+			<Projects />
+		</aside>
+	);
+};
