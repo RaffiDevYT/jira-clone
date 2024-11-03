@@ -1,174 +1,155 @@
 "use client";
-
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-import { signUpWithGithub } from "@/lib/oauth";
 import { DottedSeparator } from "@/components/dotted-separator";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+	Form,
+	FormControl,
+	FormField,
+	FormItem,
+	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-
-import { registerSchema } from "../schema";
+import { type RegisterSchema, registerSchema } from "../schemas";
 import { useRegister } from "../api/use-register";
+import {signUpWithGithub} from "@/lib/oauth";
 
-export function SignUpCard() {
-  const { mutate, isPending } = useRegister();
+export const SignUpCard = () => {
+	const { mutate, isPending } = useRegister();
+	const form = useForm<RegisterSchema>({
+		resolver: zodResolver(registerSchema),
+		defaultValues: {
+			name: "",
+			email: "",
+			password: "",
+		},
+	});
 
-  const form = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof registerSchema>) {
-    mutate({
-      json: values,
-    });
-  }
-
-  return (
-    <Card className="w-full h-full md:w-[487px] border-none shadow-none">
-      <CardHeader className="flex items-center justify-center text-center p-7">
-        <CardTitle className="text-2xl">Sign Up</CardTitle>
-        <CardDescription className="">
-          By signing-up, you agree to our <br />
-          <Link href="/privacy">
-            <span className="text-blue-700">Privacy Policy</span>
-          </Link>{" "}
-          and{" "}
-          <Link href="/terms">
-            <span className="text-blue-700">Terms of Service</span>
-          </Link>
-        </CardDescription>
-      </CardHeader>
-
-      <div className="px-7">
-        <DottedSeparator />
-      </div>
-
-      <CardContent className="p-7">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input type="text" placeholder="Enter your name" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    {/* This is your public display name. */}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Enter email address"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    {/* This is your public display email. */}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="Enter password" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    {/* This is your public display email. */}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button disabled={isPending} size="lg" className="w-full">
-              Register
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-
-      <div className="px-7">
-        <DottedSeparator />
-      </div>
-
-      <CardContent className="p-7 flex flex-col gap-y-4">
-        <Button
-          disabled={isPending}
-          size="lg"
-          variant="secondary"
-          className="w-full"
-        >
-          <FcGoogle className="mr-2 size-5" />
-          Login with Google
-        </Button>
-        <Button
-          onClick={() => signUpWithGithub()}
-          disabled={isPending}
-          size="lg"
-          variant="secondary"
-          className="w-full"
-        >
-          <FaGithub className="mr-2 size-5" />
-          Login with Github
-        </Button>
-      </CardContent>
-
-      <div className="px-7">
-        <DottedSeparator />
-      </div>
-      <CardFooter className="flex justify-center p-7">
-        <p className="">
-          Already have an account?{" "}
-          <Link href="/sign-in">
-            <span className="text-blue-700">Sign In</span>
-          </Link>{" "}
-        </p>
-      </CardFooter>
-    </Card>
-  );
-}
+	const onSubmit = (values: RegisterSchema) => {
+		mutate({ json: values });
+	};
+	return (
+		<Card className="size-full md:w-[487px] border-none shadow-none">
+			<CardHeader className="flexx items-center justify-center text-center p-7">
+				<CardTitle className="text-2xl">Sign Up</CardTitle>
+				<CardDescription>
+					By signing up, you agree to our{" "}
+					<Link href="/privacy">
+						<span className="text-blue-700">Privacy Policy</span>
+					</Link>{" "}
+					and{" "}
+					<Link href="/terms">
+						<span className="text-blue-700">terms</span>
+					</Link>
+				</CardDescription>
+			</CardHeader>
+			<div className="px-7">
+				<DottedSeparator />
+			</div>
+			<CardContent className="p-7">
+				<Form {...form}>
+					<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+						<FormField
+							name="name"
+							control={form.control}
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											{...field}
+											type="text"
+											placeholder="Enter your name"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							name="email"
+							control={form.control}
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											{...field}
+											type="email"
+											placeholder="Enter email address"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<FormField
+							name="password"
+							control={form.control}
+							render={({ field }) => (
+								<FormItem>
+									<FormControl>
+										<Input
+											{...field}
+											type="password"
+											placeholder="Enter your password"
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormItem>
+							)}
+						/>
+						<Button className="w-full" size="lg" disabled={isPending}>
+							Register
+						</Button>
+					</form>
+				</Form>
+			</CardContent>
+			<div className="px-7">
+				<DottedSeparator />
+			</div>
+			<CardContent className="p-7 flex flex-col gap-y-2">
+				<Button
+					disabled={isPending}
+					variant="secondary"
+					size="lg"
+					className="w-full"
+				>
+					<FcGoogle className="size-5 mr-2" />
+					Login with Google
+				</Button>
+				<Button
+					onClick={() => signUpWithGithub()}
+					disabled={isPending}
+					variant="secondary"
+					size="lg"
+					className="w-full"
+				>
+					<FaGithub className="size-5 mr-2" />
+					Login with Github
+				</Button>
+			</CardContent>
+			<div className="px-7">
+				<DottedSeparator />
+			</div>
+			<CardContent className="p-7 flex items-center justify-center">
+				<p>
+					already have an account?
+					<Link href="/sign-in">
+						<span className="text-blue-700">&nbsp;Sign In</span>
+					</Link>
+				</p>
+			</CardContent>
+		</Card>
+	);
+};
