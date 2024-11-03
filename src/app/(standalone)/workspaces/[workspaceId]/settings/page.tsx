@@ -1,30 +1,22 @@
 import { redirect } from "next/navigation";
-
 import { getCurrent } from "@/features/auth/queries";
-import { getWorkspace } from "@/features/workspaces/queries";
-import { EditWorkspaceForm } from "@/features/workspaces/components/edit-workspace-form";
 
-interface WorkspaceSettingsProps {
-  params: {
-    workspaceId: string;
-  };
-}
+import { WorkspaceIdSettingsClient } from "./client";
+import type { Metadata } from "next";
 
-export default async function WorkspaceSettings({
-  params,
-}: WorkspaceSettingsProps) {
-  const workspaceId = params.workspaceId;
+export const metadata: Metadata = {
+	title: "Jira > Settings",
+	description: "View and manage your settings here",
+	icons: {
+		icon: "/favicon.png",
+	},
+};
 
-  const user = await getCurrent();
-  if (!user) redirect("/sign-in");
+const WorkspaceIdSettingsPage = async () => {
+	const current = await getCurrent();
+	if (!current) redirect("/sign-in");
 
-  const workspace = await getWorkspace({ workspaceId });
-  if (!workspace) redirect(`/workspaces/${workspaceId}`);
+	return <WorkspaceIdSettingsClient />;
+};
 
-  return (
-    <div className="w-full lg:max-w-2xl">
-      {/* <div className=""> */}
-      <EditWorkspaceForm initialValues={workspace} />
-    </div>
-  );
-}
+export default WorkspaceIdSettingsPage;
