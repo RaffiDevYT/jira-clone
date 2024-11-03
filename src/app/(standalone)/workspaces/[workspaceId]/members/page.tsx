@@ -1,16 +1,24 @@
 import { getCurrent } from "@/features/auth/queries";
-import { MembersList } from "@/features/workspaces/components/members-list";
+import { MembersList } from "@/features/members/components/members-list";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 
-const WorkspaceIdMembersPage = async () => {
-    const user = await getCurrent();
-    if (!user) redirect("/sign-in");
+export const metadata: Metadata = {
+	title: "Jira > Teams",
+	description: "Manage your teams here",
+	icons: {
+		icon: "/favicon.png",
+	},
+};
 
-    return (
-        <div className="w-full lg:max-w-xl">
-            <MembersList />
-        </div>
-    );
-}
+const MembersPage = async () => {
+	const current = await getCurrent();
+	if (!current) redirect("/sign-in");
+	return (
+		<div className="w-full lg:max-w-xl">
+			<MembersList />
+		</div>
+	);
+};
 
-export default WorkspaceIdMembersPage
+export default MembersPage;
