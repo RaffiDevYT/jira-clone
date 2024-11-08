@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Jira > Teams",
+	title: "Flowtrack > Teams",
 	description: "Manage your teams here",
 	icons: {
 		icon: "/favicon.png",

@@ -9,9 +9,8 @@ import { WorkspaceSwitcher } from "./workspace-switcher";
 export const Sidebar = () => {
 	return (
 		<aside className="h-full bg-neutral-100 p-4 w-full">
-			<Link href="/">
-				{/* <Image src="/logo.png" alt="Logo" width={164} height={50} /> */}
-				<h1 className="text-2xl font-semibold text-center">JIRA APPS</h1>
+			<Link href="/" className="flex justify-center">
+				<Image src="/Flowtrack.png" alt="Logo" width={164} height={50} />
 			</Link>
 			<DottedSeparator className="my-4" />
 			<WorkspaceSwitcher />

@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 interface MemberAvatarProps {
@@ -19,6 +19,7 @@ export const MemberAvatar = ({
 				className
 			)}
 		>
+			<AvatarImage src="/avatar.png" alt="@shadcn" />
 			<AvatarFallback
 				className={cn(
 					"bg-neutral-200 font-medium text-neutral-500 flex items-center justify-center",

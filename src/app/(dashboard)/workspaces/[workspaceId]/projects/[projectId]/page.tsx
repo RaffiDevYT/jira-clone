@@ -4,7 +4,7 @@ import { ProjectIdClient } from "./client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Jira > Projects",
+	title: "Flowtrack > Projects",
 	description: "View and manage your projects here",
 	icons: {
 		icon: "/favicon.png",

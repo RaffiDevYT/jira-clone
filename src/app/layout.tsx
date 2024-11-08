@@ -10,7 +10,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "Jira Clone",
+	title: "Flowtrack",
 	description:
 		"Plan, track, and manage your agile and software development projects in Jira. Customize your workflow, collaborate, and release great software",
 	icons: {

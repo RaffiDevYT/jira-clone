@@ -5,7 +5,7 @@ import { WorkspaceIdSettingsClient } from "./client";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-	title: "Jira > Settings",
+	title: "Flowtrack > Settings",
 	description: "View and manage your settings here",
 	icons: {
 		icon: "/favicon.png",

@@ -3,9 +3,9 @@ import { TaskViewSwitcher } from "@/features/tasks/components/task-view-switcher
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 
-// title: "Jira > Tasks"
+// title: "Flowtrack > Tasks"
 export const metadata: Metadata = {
-	title: "Jira > Tasks",
+	title: "Flowtrack > Tasks",
 	description: "View and manage your tasks here",
 	icons: {
 		icon: "/favicon.png",
