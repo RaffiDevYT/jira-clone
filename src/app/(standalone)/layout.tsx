@@ -9,7 +9,7 @@ const StandaloneLayout = ({ children }: PropsWithChildren) => {
 			<div className="mx-auto max-w-screen-2xl p-4">
 				<nav className="flex justify-between items-center h-[73px]">
 					<Link href="/">
-						<Image src="/logo.png" width={152} height={56} alt="logo" />
+						<Image src="/flowtrack.png" width={152} height={56} alt="logo" />
 					</Link>
 					<UserButton />
 				</nav>
