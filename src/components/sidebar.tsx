@@ -10,7 +10,7 @@ export const Sidebar = () => {
 	return (
 		<aside className="h-full bg-neutral-100 p-4 w-full">
 			<Link href="/" className="flex justify-center">
-				<Image src="/Flowtrack.png" alt="Logo" width={164} height={50} />
+				<Image src="/flowtrack.png" alt="Logo" width={164} height={50} />
 			</Link>
 			<DottedSeparator className="my-4" />
 			<WorkspaceSwitcher />
